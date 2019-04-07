@@ -50,8 +50,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 
     // TODO:: Create point processor
     pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = lidar->scan();
-    auto origin = lidar->position;
-    renderRays(viewer,origin, cloud); 
+    renderPointCloud(viewer, cloud, "PCD_ahmed");
 }
 
 
