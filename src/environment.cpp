@@ -54,8 +54,25 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
     
     ProcessPointClouds<pcl::PointXYZ> *ProcessPointCloudsObjectPtr = new ProcessPointClouds<pcl::PointXYZ>();
     std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> segmentCloud = ProcessPointCloudsObjectPtr->SegmentPlane(cloud, 100, 0.2);
-    renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
-    renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
+    //renderPointCloud(viewer,segmentCloud.first,"obstCloud",Color(1,0,0));
+    //renderPointCloud(viewer,segmentCloud.second,"planeCloud",Color(0,1,0));
+    
+    //show clustering output
+    std::vector<pcl::PointCloud<pcl::PointXYZ>::Ptr> cloudClusters = ProcessPointCloudsObjectPtr->Clustering(
+        segmentCloud.first, 1.0, 3, 30);
+    auto red = Color(1,0,0);
+    auto green = Color(0,1,0);
+    auto blue = Color(0,0,1);
+    std::vector<Color> colors = {red, green, blue};//Colors for clusters
+    int clusterId = 0;
+    for(pcl::PointCloud<pcl::PointXYZ>::Ptr cluster : cloudClusters)
+    {
+        std::cout << "cluster size ";
+        ProcessPointCloudsObjectPtr->numPoints(cluster);//function that prints number of points in the cluster
+        std::string obs_cloud_str = "obstCloud"+std::to_string(clusterId);
+        renderPointCloud(viewer,cluster, obs_cloud_str, colors[clusterId]);
+        ++clusterId;
+    }
     
 }
 

@@ -102,9 +102,32 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     // Time clustering process
     auto startTime = std::chrono::steady_clock::now();
 
-    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;//the return of the function that will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-points which are related to the cluster
 
-    // TODO:: Fill in the function to perform euclidean clustering to group detected obstacles
+    // Creating the KdTree object for the search method of the extraction
+    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//create a Kdtree object to find the nearest neighbours in log(n)
+    tree->setInputCloud (cloud);
+
+    std::vector<pcl::PointIndices> cluster_indices;//This vector will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-indicies which are related to that cluster
+    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;//use euclidean distance method for finding distance between points
+    ec.setClusterTolerance (clusterTolerance);//The distance between points to be considered in the same cluster
+    ec.setMinClusterSize (minSize);//minimum cluster size to avoid taking noise as clusters
+    ec.setMaxClusterSize (maxSize);//maximum cluster size to avoid taking 2 clusters as 1 big cluster
+    ec.setSearchMethod (tree);
+    ec.setInputCloud (cloud);
+    ec.extract (cluster_indices);//fill the cluster indices vector
+    
+    //Create a loop that will fill the clusters vector with the actual cloud points
+    for(pcl::PointIndices a_cluster : cluster_indices)
+    {//find a cluster from the clusters vector
+        typename pcl::PointCloud<PointT>::Ptr cloud_cluster (new  pcl::PointCloud<PointT>);
+        for(int a_point_idx : a_cluster.indices)
+        {
+            PointT point = cloud->points[a_point_idx];
+            cloud_cluster->points.push_back(point);
+        }
+        clusters.push_back(cloud_cluster);
+    }
 
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
