@@ -7,7 +7,7 @@
 // Structure to represent node of kd tree
 struct Node
 {
-	std::vector<float> point;
+	std::vector<float> point;//0: x, 1: y, 2:z
 	int id;
 	Node* left;
 	Node* right;
@@ -85,10 +85,57 @@ struct KdTree
 		}
 	}
 
+	bool isInsideBox(std::vector<float> point, std::vector<float> target, float distanceTol)
+	{
+		bool isInside = false;
+		float minX = target[0] - distanceTol;
+		float maxX = target[0] + distanceTol;
+		float minY = target[1] - distanceTol;
+		float maxY = target[1] + distanceTol;
+		if((point[0] <= maxX && point[0] >= minX) && (point[1] <= maxY && point[1] >= minY))
+		{
+			isInside = true;
+		}
+		return isInside;
+	}
+
+	float computeDist(std::vector<float> point1, std::vector<float> point2)
+	{
+		float subX = point1[0] - point2[0];
+		float subY = point1[1] - point2[1];
+		float retDist = sqrt(subX * subX + subY * subY);
+		return retDist;
+	}
+
+	void searchRec(Node* currNode, uint level, std::vector<float> target, float distanceTol, std::vector<int>& ids)
+	{
+		if(currNode == NULL)
+			return;
+		if(isInsideBox(currNode->point, target, distanceTol))
+		{
+			float dist = computeDist(target, currNode->point);
+			if(dist <= distanceTol)
+			{
+				ids.push_back(currNode->id);
+			}
+		}
+		if(currNode->point[level%2] >= (target[level%2]-distanceTol))
+		{
+			searchRec(currNode->left, level + 1, target, distanceTol, ids);
+		}
+		if(currNode->point[level%2] <= (target[level%2]+distanceTol))
+		{
+			searchRec(currNode->right, level + 1, target, distanceTol, ids);
+		}
+	}
+
 	// return a list of point ids in the tree that are within distance of target
 	std::vector<int> search(std::vector<float> target, float distanceTol)
 	{
 		std::vector<int> ids;
+		Node* currNode = root;
+		searchRec(root, 0, target, distanceTol, ids);
+		
 		return ids;
 	}
 	
