@@ -71,6 +71,8 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
         ProcessPointCloudsObjectPtr->numPoints(cluster);//function that prints number of points in the cluster
         std::string obs_cloud_str = "obstCloud"+std::to_string(clusterId);
         renderPointCloud(viewer,cluster, obs_cloud_str, colors[clusterId]);
+        Box box = ProcessPointCloudsObjectPtr->BoundingBox(cluster);
+        renderBox(viewer,box,clusterId);
         ++clusterId;
     }
     
