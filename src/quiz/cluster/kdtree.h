@@ -33,77 +33,48 @@ struct KdTree
 		}
 		else
 		{
-			if(point[depth % 2] >= (*currNode)->point[depth % 2])
+			Node ** nodeToAdd = NULL;
+			if(point[depth % point.size()] >= (*currNode)->point[depth % point.size()])
 			{
-				insertHelper(&((*currNode)->right), depth + 1, point, id);
+				nodeToAdd = &((*currNode)->right);
 			}
-			else{
-				insertHelper(&((*currNode)->left), depth + 1, point, id);
+			else
+			{
+				nodeToAdd = &((*currNode)->left);	
 			}
+			insertHelper(nodeToAdd, depth + 1, point, id);
 		}
 	}
 
 	void insert(std::vector<float> point, int id)
 	{
-		// TODO: Fill in this function to insert a new point into the tree
-		// the function should create a new node and place correctly with in the root 
-		//insertHelper(&root, 0, point, id);
-		Node * newNode = new Node(point, id);
-		int depth = 0;
-		if(root == NULL)
-		{
-			root = newNode;
-		}
-		else
-		{
-			Node * curr = root;
-			bool isNodeAssigned = false;
-			while(isNodeAssigned == false)
-			{
-				if(point[depth % 2] >= curr->point[depth % 2]){
-					if(curr->right == NULL)
-					{
-						curr->right = newNode;
-						isNodeAssigned = true;
-					}
-					else
-						curr = curr->right;
-					
-				}
-				else
-				{
-					if(curr->left == NULL)
-					{
-						curr->left = newNode;
-						isNodeAssigned = true;
-					}
-					else
-						curr = curr->left;
-				}
-				depth++;
-			}
-		}
+		insertHelper(&root, 0, point, id);	
 	}
 
 	bool isInsideBox(std::vector<float> point, std::vector<float> target, float distanceTol)
 	{
-		bool isInside = false;
-		float minX = target[0] - distanceTol;
-		float maxX = target[0] + distanceTol;
-		float minY = target[1] - distanceTol;
-		float maxY = target[1] + distanceTol;
-		if((point[0] <= maxX && point[0] >= minX) && (point[1] <= maxY && point[1] >= minY))
+		for(int dimension = 0;dimension < point.size();++dimension)
 		{
-			isInside = true;
+			float minN = target[dimension] - distanceTol;
+			float maxN = target[dimension] + distanceTol;
+			if(point[dimension] > maxN || point[dimension] < minN)
+			{
+				return false;
+			}
 		}
-		return isInside;
+		return true;
 	}
 
 	float computeDist(std::vector<float> point1, std::vector<float> point2)
 	{
-		float subX = point1[0] - point2[0];
-		float subY = point1[1] - point2[1];
-		float retDist = sqrt(subX * subX + subY * subY);
+		float retDist = 0;
+		for(int dimension = 0;dimension < point1.size();++dimension)
+		{
+			float subN = point1[dimension] - point2[dimension];
+			retDist += subN * subN;
+		}
+
+		retDist = sqrt(retDist);
 		return retDist;
 	}
 
@@ -119,11 +90,12 @@ struct KdTree
 				ids.push_back(currNode->id);
 			}
 		}
-		if(currNode->point[level%2] >= (target[level%2]-distanceTol))
+		uint numDimensions = target.size();
+		if(currNode->point[level%numDimensions] >= (target[level%numDimensions]-distanceTol))
 		{
 			searchRec(currNode->left, level + 1, target, distanceTol, ids);
 		}
-		if(currNode->point[level%2] <= (target[level%2]+distanceTol))
+		if(currNode->point[level%numDimensions] <= (target[level%numDimensions]+distanceTol))
 		{
 			searchRec(currNode->right, level + 1, target, distanceTol, ids);
 		}
