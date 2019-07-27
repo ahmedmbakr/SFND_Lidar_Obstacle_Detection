@@ -39,17 +39,47 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
   // ----------------------------------------------------
   // -----Open 3D viewer and display City Block     -----
   // ----------------------------------------------------
+    typedef pcl::PointXYZI pointT ;
+    ProcessPointClouds<pointT>* pointProcessorI = new ProcessPointClouds<pointT>();
+    pcl::PointCloud<pointT>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
+    float filterRes = 0.2f;//The voxel box resultion in meters
+    float minX = -7.0f, maxX = 30.0f;//Controls the longitudinal movement of the car
+    float minY = -5.0f, maxY = 7.0f;//Controls the lateral movement of the car. Maximize the view on the right of the driver as it is the driver side
+    float minZ = -2.0f, maxZ = 0.5f;//controls the height of the lidar
+    Eigen::Vector4f minPoint(minX,minY,minZ,1);
+    Eigen::Vector4f maxPoint(maxX,maxY,maxZ,1);
+    auto filtered_cloud = pointProcessorI->FilterCloud(inputCloud, filterRes, minPoint, maxPoint);
+    //renderPointCloud(viewer,filtered_cloud,"filteredCloud");
 
-  ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
-  pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
-  float filterRes = 0.2f;//The voxel box resultion in meters
-  float minX = -7.0f, maxX = 10.0f;//Controls the longitudinal movement of the car
-  float minY = -5.0f, maxY = 7.0f;//Controls the lateral movement of the car. Maximize the view on the right of the driver as it is the driver side
-  float minZ = -4.0f, maxZ = 4.0f;//controls the height of the lidar
-  Eigen::Vector4f minPoint(minX,minY,minZ,1);
-  Eigen::Vector4f maxPoint(maxX,maxY,maxZ,1);
-  auto filtered_cloud = pointProcessorI->FilterCloud(inputCloud, filterRes, minPoint, maxPoint);
-  renderPointCloud(viewer,filtered_cloud,"filteredCloud");
+    int maxIterations = 100;
+    float distThresh = 0.2;
+    std::pair<pcl::PointCloud<pointT>::Ptr, pcl::PointCloud<pointT>::Ptr> segmentCloud =
+      pointProcessorI->SegmentPlane(filtered_cloud, maxIterations, distThresh);
+    auto obstCloud = segmentCloud.first;
+    auto planeCloud = segmentCloud.second;
+    //renderPointCloud(viewer,obstCloud,"obstCloud",Color(1,0,0));
+    renderPointCloud(viewer,planeCloud,"planeCloud",Color(0,1,0));
+
+    //show clustering output
+    float clusterTolerance = 0.5;
+    int minSize = 20, maxSize = 400;
+    std::vector<pcl::PointCloud<pointT>::Ptr> cloudClusters = pointProcessorI->Clustering(obstCloud, clusterTolerance,
+     minSize, maxSize);
+    auto red = Color(1,0,0);
+    auto yellow = Color(1,1,0);
+    auto blue = Color(0,0,1);
+    std::vector<Color> colors = {red, yellow, blue};//Colors for clusters
+    int clusterId = 0;
+    for(pcl::PointCloud<pointT>::Ptr cluster : cloudClusters)
+    {
+        std::cout << "cluster size ";
+        pointProcessorI->numPoints(cluster);//function that prints number of points in the cluster
+        std::string obs_cloud_str = "obstCloud" + std::to_string(clusterId);
+        renderPointCloud(viewer,cluster, obs_cloud_str, colors[clusterId % colors.size()]);
+        Box box = pointProcessorI->BoundingBox(cluster);
+        renderBox(viewer,box,clusterId);
+        ++clusterId;
+    }
 }
 
 
