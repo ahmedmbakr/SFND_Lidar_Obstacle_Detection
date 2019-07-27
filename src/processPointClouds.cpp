@@ -55,9 +55,9 @@ template<typename PointT>
 std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::SeparateClouds(pcl::PointIndices::Ptr inliers, typename pcl::PointCloud<PointT>::Ptr cloud) 
 {
   // TODO: Create two new point clouds, one cloud with obstacles and other with segmented plane+
-    pcl::PointCloud<pcl::PointXYZ>::Ptr obstCloud (new pcl::PointCloud<pcl::PointXYZ>), planeCloud (new pcl::PointCloud<pcl::PointXYZ>);
+    typename pcl::PointCloud<PointT>::Ptr obstCloud (new pcl::PointCloud<PointT>), planeCloud (new pcl::PointCloud<PointT>);
     // Create the filtering object
-    pcl::ExtractIndices<pcl::PointXYZ> extract;
+    pcl::ExtractIndices<PointT> extract;
     // Extract the inliers
     extract.setInputCloud (cloud);
     extract.setIndices (inliers);
@@ -81,7 +81,7 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices ()); // holds the indicies of the points that relate to the road plane
     // Create the segmentation object
-    pcl::SACSegmentation<pcl::PointXYZ> seg;
+    pcl::SACSegmentation<PointT> seg;
     // Optional
     seg.setOptimizeCoefficients (true);
     // Mandatory
@@ -118,11 +118,11 @@ std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointClouds<PointT>::C
     std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;//the return of the function that will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-points which are related to the cluster
 
     // Creating the KdTree object for the search method of the extraction
-    pcl::search::KdTree<pcl::PointXYZ>::Ptr tree (new pcl::search::KdTree<pcl::PointXYZ>);//create a Kdtree object to find the nearest neighbours in log(n)
+    typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);//create a Kdtree object to find the nearest neighbours in log(n)
     tree->setInputCloud (cloud);
 
     std::vector<pcl::PointIndices> cluster_indices;//This vector will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-indicies which are related to that cluster
-    pcl::EuclideanClusterExtraction<pcl::PointXYZ> ec;//use euclidean distance method for finding distance between points
+    pcl::EuclideanClusterExtraction<PointT> ec;//use euclidean distance method for finding distance between points
     ec.setClusterTolerance (clusterTolerance);//The distance between points to be considered in the same cluster
     ec.setMinClusterSize (minSize);//minimum cluster size to avoid taking noise as clusters
     ec.setMaxClusterSize (maxSize);//maximum cluster size to avoid taking 2 clusters as 1 big cluster
