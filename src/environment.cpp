@@ -34,6 +34,24 @@ std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer
     return cars;
 }
 
+void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer)
+{
+  // ----------------------------------------------------
+  // -----Open 3D viewer and display City Block     -----
+  // ----------------------------------------------------
+
+  ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
+  pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloud = pointProcessorI->loadPcd("../src/sensors/data/pcd/data_1/0000000000.pcd");
+  float filterRes = 0.2f;//The voxel box resultion in meters
+  float minX = -7.0f, maxX = 10.0f;//Controls the longitudinal movement of the car
+  float minY = -5.0f, maxY = 7.0f;//Controls the lateral movement of the car. Maximize the view on the right of the driver as it is the driver side
+  float minZ = -4.0f, maxZ = 4.0f;//controls the height of the lidar
+  Eigen::Vector4f minPoint(minX,minY,minZ,1);
+  Eigen::Vector4f maxPoint(maxX,maxY,maxZ,1);
+  auto filtered_cloud = pointProcessorI->FilterCloud(inputCloud, filterRes, minPoint, maxPoint);
+  renderPointCloud(viewer,filtered_cloud,"filteredCloud");
+}
+
 
 void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
@@ -110,7 +128,7 @@ int main (int argc, char** argv)
     pcl::visualization::PCLVisualizer::Ptr viewer (new pcl::visualization::PCLVisualizer ("3D Viewer"));
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
-    simpleHighway(viewer);
+    cityBlock(viewer);
 
     while (!viewer->wasStopped ())
     {
