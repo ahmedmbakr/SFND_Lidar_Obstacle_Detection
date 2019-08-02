@@ -134,3 +134,102 @@ ProcessPointCloudsOwn<PointT>::SegmentPlane(typename pcl::PointCloud<PointT>::Pt
 	}
     return std::make_pair(cloudOutliers, cloudInliers); 
 }
+
+template<typename PointT>
+std::vector<std::vector<int>> ProcessPointCloudsOwn<PointT>::Cluster::euclideanCluster(
+    const std::vector<std::vector<float>>& points, float distanceTol, int minSize, int maxSize)
+{
+	std::vector<std::vector<int>> clusters;
+	std::vector<bool> isProcessed(points.size(), false);
+	for(int i = 0; i < points.size(); ++i)
+	{
+		auto point = points[i];
+		if(!isProcessed[i])
+		{
+			std::vector<int> cluster;
+			proximity(i, cluster, isProcessed, points, distanceTol);
+            if(cluster.size() >= minSize && cluster.size() <= maxSize)
+			    clusters.push_back(cluster);
+		}
+	}
+	return clusters;
+}
+
+template<typename PointT>
+void ProcessPointCloudsOwn<PointT>::Cluster::proximity(int idx, std::vector<int>& cluster, std::vector<bool>& isProcessed,
+ const std::vector<std::vector<float>>& points, float distanceTol)
+{
+	isProcessed[idx] = true;
+	cluster.push_back(idx);
+	auto nearbyPointsIndicies = tree->search(points[idx], distanceTol);
+	for(auto nearbyPointIdx : nearbyPointsIndicies)
+	{
+		if(!isProcessed[nearbyPointIdx])
+		{
+			proximity(nearbyPointIdx, cluster, isProcessed, points, distanceTol);
+		}
+	}
+}
+
+template<typename PointT>
+void ProcessPointCloudsOwn<PointT>::Cluster::insertPointsInKdTree(typename pcl::PointCloud<PointT>::Ptr cloud)
+{
+    for (int i=0; i<cloud->points.size(); i++) 
+    {
+        std::vector<float> point = {cloud->points[i].x, cloud->points[i].y, cloud->points[i].z};
+    	this->tree->insert(point,i);
+    }
+}
+
+template<typename PointT>
+std::vector<typename pcl::PointCloud<PointT>::Ptr> ProcessPointCloudsOwn<PointT>::Clustering(
+    typename pcl::PointCloud<PointT>::Ptr cloud, float clusterTolerance, int minSize, int maxSize)
+{
+    // Time clustering process
+    auto startTime = std::chrono::steady_clock::now();
+
+    std::vector<typename pcl::PointCloud<PointT>::Ptr> clusters;//the return of the function that will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-points which are related to the cluster
+
+    // Creating the KdTree object for the search method of the extraction
+    /*typename pcl::search::KdTree<PointT>::Ptr tree (new pcl::search::KdTree<PointT>);//create a Kdtree object to find the nearest neighbours in log(n)
+    tree->setInputCloud (cloud);
+
+    std::vector<pcl::PointIndices> cluster_indices;//This vector will contain (n) elements, where (n) is the number of clusters. Each element contains the cloud-indicies which are related to that cluster
+    pcl::EuclideanClusterExtraction<PointT> ec;//use euclidean distance method for finding distance between points
+    ec.setClusterTolerance (clusterTolerance);//The distance between points to be considered in the same cluster
+    ec.setMinClusterSize (minSize);//minimum cluster size to avoid taking noise as clusters
+    ec.setMaxClusterSize (maxSize);//maximum cluster size to avoid taking 2 clusters as 1 big cluster
+    ec.setSearchMethod (tree);
+    ec.setInputCloud (cloud);
+    ec.extract (cluster_indices);//fill the cluster indices vector*/
+    Cluster clusterProcessor;
+    clusterProcessor.insertPointsInKdTree(cloud);
+    
+    std::vector<std::vector<float>> points;
+    for(auto point : cloud->points)
+    {
+        std::vector<float> aPoint = {point.x, point.y, point.z/*, point.intensity */};
+        points.push_back(aPoint);
+    }
+    std::vector<std::vector<int>> clustersIndices = clusterProcessor.euclideanCluster(points, clusterTolerance, minSize,
+     maxSize);
+    for(std::vector<int> cluster : clustersIndices)
+  	{
+  		typename pcl::PointCloud<PointT>::Ptr clusterCloud(new pcl::PointCloud<PointT>());
+  		for(int a_point_idx : cluster)
+  			clusterCloud->points.push_back(cloud->points[a_point_idx]);
+        clusters.push_back(clusterCloud);
+  	}
+
+    auto endTime = std::chrono::steady_clock::now();
+    auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
+    std::cout << "my clustering took " << elapsedTime.count() << " milliseconds and found " << clusters.size() << " clusters" << std::endl;
+    
+    static unsigned long long countNumTimesOfExecution = 0;
+    static unsigned long long accumelativeTimeTaken = 0;
+    countNumTimesOfExecution++;
+    accumelativeTimeTaken += elapsedTime.count();
+    std::cout << "My own Average clustering took " << accumelativeTimeTaken / 1.0 * countNumTimesOfExecution << " milliseconds" << std::endl;
+    
+    return clusters;
+}
