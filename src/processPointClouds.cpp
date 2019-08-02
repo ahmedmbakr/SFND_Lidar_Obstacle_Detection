@@ -24,7 +24,9 @@ template<typename PointT>
 typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(typename pcl::PointCloud<PointT>::Ptr cloud,
  float filterRes, Eigen::Vector4f minPoint, Eigen::Vector4f maxPoint)
 {
-
+    static int countNumTimesOfExecution = 0;
+    static unsigned int accumelativeTimeTaken = 0;
+    countNumTimesOfExecution++;
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
 
@@ -46,7 +48,8 @@ typename pcl::PointCloud<PointT>::Ptr ProcessPointClouds<PointT>::FilterCloud(ty
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "filtering took " << elapsedTime.count() << " milliseconds" << std::endl;
-
+    accumelativeTimeTaken += (float)elapsedTime.count();
+    std::cout << "Average filtering took " << accumelativeTimeTaken / 1.0 * countNumTimesOfExecution << " milliseconds" << std::endl;
     return regioned_cloud;
 }
 
@@ -76,8 +79,6 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
 {
     // Time segmentation process
     auto startTime = std::chrono::steady_clock::now();
-	// pcl::PointIndices::Ptr inliers;
-    // TODO:: Fill in this function to find inliers for the cloud.
     pcl::ModelCoefficients::Ptr coefficients (new pcl::ModelCoefficients ());
     pcl::PointIndices::Ptr inliers (new pcl::PointIndices ()); // holds the indicies of the points that relate to the road plane
     // Create the segmentation object
@@ -102,7 +103,12 @@ std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT
     auto endTime = std::chrono::steady_clock::now();
     auto elapsedTime = std::chrono::duration_cast<std::chrono::milliseconds>(endTime - startTime);
     std::cout << "plane segmentation took " << elapsedTime.count() << " milliseconds" << std::endl;
-
+    static unsigned long long countNumTimesOfExecution = 0;
+    static unsigned long long accumelativeTimeTaken = 0;
+    countNumTimesOfExecution++;
+    accumelativeTimeTaken += elapsedTime.count();
+    std::cout << "Average plane segmentation took " << accumelativeTimeTaken / 1.0 * countNumTimesOfExecution << " milliseconds" << std::endl;
+    
     std::pair<typename pcl::PointCloud<PointT>::Ptr, typename pcl::PointCloud<PointT>::Ptr> segResult = SeparateClouds(inliers,cloud);
     return segResult;
 }
