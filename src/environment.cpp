@@ -5,8 +5,10 @@
 #include "sensors/lidar.h"
 #include "render/render.h"
 #include "processPointClouds.h"
+#include "processPointCloudsOwn.h"
 // using templates for processPointClouds so also include .cpp to help linker
-#include "processPointClouds.cpp"
+//#include "processPointClouds.cpp"
+#include "processPointCloudsOwn.cpp"
 
 std::vector<Car> initHighway(bool renderScene, pcl::visualization::PCLVisualizer::Ptr& viewer)
 {
@@ -159,7 +161,7 @@ int main (int argc, char** argv)
     CameraAngle setAngle = XY;
     initCamera(setAngle, viewer);
 
-    ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointClouds<pcl::PointXYZI>();
+    ProcessPointClouds<pcl::PointXYZI>* pointProcessorI = new ProcessPointCloudsOwn<pcl::PointXYZI>();
     std::vector<boost::filesystem::path> stream = pointProcessorI->streamPcd("../src/sensors/data/pcd/data_1");
     auto streamIterator = stream.begin();
     pcl::PointCloud<pcl::PointXYZI>::Ptr inputCloudI;
@@ -176,7 +178,10 @@ int main (int argc, char** argv)
 
         streamIterator++;
         if(streamIterator == stream.end())
+        {
+            //break;
             streamIterator = stream.begin();
+        }
 
         viewer->spinOnce ();
     }
